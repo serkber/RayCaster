@@ -7,7 +7,7 @@ using System;
 [CustomEditor(typeof(Camera))]
 public class CameraEditor : Editor
 {
-    private int previewSize = 128;
+    private const int previewSize = 256;
 
     private Camera camera;
 
@@ -18,15 +18,6 @@ public class CameraEditor : Editor
 
     public override void OnInspectorGUI()
     {
-        EditorGUI.BeginChangeCheck();
-        previewSize = EditorGUILayout.IntField("Preview Size", previewSize);
-
-        if (EditorGUI.EndChangeCheck())
-        {
-            SceneView.lastActiveSceneView.Repaint();
-        }
-
-
         DrawDefaultInspector();
     }
 

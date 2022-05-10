@@ -12,14 +12,19 @@ RWTexture2D<float4> Result;
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
 	float2 uv = float2(id.xy);
-
 	uv -= float2(0, 88);
 
-	float bar = abs(uv.y) / wallsHeight < 1 / hitDistancesBuffer[id.x] ? 1 : 0;
+	float floo = saturate(-uv.y / 88);
+	float ceiling = saturate(uv.y / 88) * 0.25;
 
-	float shade = 1 - floor(hitDistancesBuffer[id.x]) / 5;
+	float bars = abs(uv.y) / wallsHeight < 1 / hitDistancesBuffer[id.x] ? 1 : 0;
 
-	float value = bar * shade * hitScansBuffer[id.x];
+	float shade = 1 - floor(hitDistancesBuffer[id.x] * 5) / 16;
+
+	float value = bars * shade * hitScansBuffer[id.x];
+
+	value = lerp(floo + ceiling, value, value);
+	value = saturate(value);
 
 	float4 color = float4(value.xxx, 1);
 

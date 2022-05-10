@@ -77,7 +77,7 @@ public class Camera : MonoBehaviour
         {
             float angle = initialAngle + angleDelta * i;
 
-            Ray ray = new Ray(transform.position, Quaternion.AngleAxis(angle, -Vector3.forward) * Vector2.up);
+            Ray ray = new Ray(transform.position, Quaternion.AngleAxis(angle, -transform.forward) * transform.up);
 
             bool hitScan = Physics.Raycast(ray, out RaycastHit hit);
 
