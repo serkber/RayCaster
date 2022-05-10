@@ -1,0 +1,27 @@
+#pragma kernel CSMain
+
+StructuredBuffer<int> hitScansBuffer;
+StructuredBuffer<float> hitDistancesBuffer;
+
+int2 textureSize;
+float wallsHeight;
+
+RWTexture2D<float4> Result;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	float2 uv = float2(id.xy);
+
+	uv -= float2(0, 88);
+
+	float bar = abs(uv.y) / wallsHeight < 1 / hitDistancesBuffer[id.x] ? 1 : 0;
+
+	float shade = 1 - floor(hitDistancesBuffer[id.x]) / 5;
+
+	float value = bar * shade * hitScansBuffer[id.x];
+
+	float4 color = float4(value.xxx, 1);
+
+	Result[id.xy] = color;
+}
