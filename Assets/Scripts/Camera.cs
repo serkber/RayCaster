@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,11 +38,18 @@ public class Camera : MonoBehaviour
     private float[] hitDistances;
     ComputeBuffer hitDistancesbuffer;
 
+    private void Start()
+    {
+        Init();
+    }
+
     [ContextMenu("Init")]
     private void Init()
     {
-        outputTexture = new RenderTexture(verticalLines, horizontalLines, 0);
-        outputTexture.enableRandomWrite = true;
+        outputTexture = new RenderTexture(verticalLines, horizontalLines, 0) {
+            filterMode = FilterMode.Point,
+            enableRandomWrite = true
+        };
         outputTexture.Create();
 
         shaderHandle = shader.FindKernel("CSMain");
@@ -77,18 +85,20 @@ public class Camera : MonoBehaviour
         {
             float angle = initialAngle + angleDelta * i;
 
-            Ray ray = new Ray(transform.position, Quaternion.AngleAxis(angle, -transform.forward) * transform.up);
-
-            bool hitScan = Physics.Raycast(ray, out RaycastHit hit);
+            Vector3 rayDir = Quaternion.AngleAxis(angle, -transform.forward) * transform.up;
+            int environmentLayer = LayerMask.NameToLayer("Environment");
+            int layerMask = 1 << environmentLayer;
+            RaycastHit2D raycastHit = Physics2D.Raycast(transform.position, rayDir, 100f, layerMask);
+            bool hitScan = raycastHit.collider != null;
 
             hitScans[i] = hitScan ? 1 : 0;
-            hitDistances[i] = hit.distance;
+            hitDistances[i] = raycastHit.distance;
 
             if (debug)
             {
-                float hitDistance = hitScan ? hit.distance : 1000f;
+                float hitDistance = hitScan ? raycastHit.distance : 1000f;
                 Color hitColor = hitScan ? Color.red : Color.white;
-                Vector3 debugLine = ray.direction * hitDistance;
+                Vector3 debugLine = rayDir * hitDistance;
                 Debug.DrawRay(transform.position, debugLine, hitColor);
             }
         }
@@ -101,7 +111,7 @@ public class Camera : MonoBehaviour
         hitDistancesbuffer.SetData(hitDistances);
         shader.SetBuffer(shaderHandle, "hitDistancesBuffer", hitDistancesbuffer);
 
-        shader.SetVector("textureSize", new Vector2(verticalLines, horizontalLines));
+        shader.SetInt("textureHeight", horizontalLines);
         shader.SetFloat("wallsHeight", wallsHeight);
 
         shader.SetTexture(shaderHandle, "Result", outputTexture);
@@ -110,5 +120,11 @@ public class Camera : MonoBehaviour
 
         hitScansBuffer.Release();
         hitDistancesbuffer.Release();
+    }
+
+    private void OnGUI()
+    {
+        Rect screenRect = new Rect(0, 0, Screen.width, Screen.height);
+        GUI.DrawTexture(screenRect, outputTexture);
     }
 }
