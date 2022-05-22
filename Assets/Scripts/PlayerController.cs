@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -37,14 +34,13 @@ public class PlayerController : MonoBehaviour
 
     private void Movement()
     {
-
         bool canAccelerate = rb.velocity.magnitude < maxSpeed;
         Vector2 speed = Vector2.zero;
         float modifier = Time.deltaTime * acceleration;
         bool moving = false;
         
         if (Input.GetKey(KeyCode.W)) {
-            speed += (Vector2)transform.up;
+            speed += (Vector2) transform.up;
             moving = true;
         }
 
