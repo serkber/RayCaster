@@ -12,16 +12,16 @@ float4 light;
 float3 groundColor;
 float3 ceillingColor;
 
-RWTexture2D<float4> EnvironmentTexture;
+RWTexture2D<float4> EnvironmentOutTexture;
 Texture2D<float4> WallsTexture;
-RWTexture2D<float> EnvironmentDepth;
+RWTexture2D<float> DepthOutTexture;
 
 [numthreads(8,8,1)]
 void DrawEnvironment (uint3 id : SV_DispatchThreadID)
 {
 	int textureWidth;
 	int textureHeight;
-	EnvironmentTexture.GetDimensions(textureWidth, textureHeight);
+	EnvironmentOutTexture.GetDimensions(textureWidth, textureHeight);
 	
 	float2 uv = float2(id.xy);
 	uv -= float2(0, textureHeight / 2 + heightOffset);
@@ -65,8 +65,8 @@ void DrawEnvironment (uint3 id : SV_DispatchThreadID)
 
 	float4 color = float4(walls + ceilGround, 1);
 
-	EnvironmentTexture[id.xy] = color;
-	EnvironmentDepth[int2(id.x, 0)] = hitDistancesBuffer[id.x];
+	EnvironmentOutTexture[id.xy] = color;
+	DepthOutTexture[int2(id.x, 0)] = hitDistancesBuffer[id.x];
 }
 
 struct Sprite
@@ -81,15 +81,16 @@ struct Sprite
 StructuredBuffer<Sprite> spritesBuffer;
 int spritesCount;
 
-RWTexture2D<float4> SpritesTexture;
+RWTexture2D<float4> SpritesOutTexture;
 Texture2D<float4> SpriteTexture;
+Texture3D<float4> spritesAtlas;
 
 [numthreads(8,8,1)]
 void DrawSprites (uint3 id : SV_DispatchThreadID)
 {
 	int textureWidth;
 	int textureHeight;
-	SpritesTexture.GetDimensions(textureWidth, textureHeight);
+	SpritesOutTexture.GetDimensions(textureWidth, textureHeight);
 	int2 textureSize = int2(textureWidth, textureHeight);
 	float aspect = textureWidth / (float)textureHeight;
 	
@@ -99,7 +100,7 @@ void DrawSprites (uint3 id : SV_DispatchThreadID)
 	uv.y -= 0.5 / aspect;
 
 	for(int i = 0; i < spritesCount; i++){
-		if (spritesBuffer[i].distance > EnvironmentDepth[int2(id.x, 0)]){
+		if (spritesBuffer[i].distance > DepthOutTexture[int2(id.x, 0)]){
 			continue;
 		}
 
@@ -113,16 +114,17 @@ void DrawSprites (uint3 id : SV_DispatchThreadID)
 		spriteUv *= spritesBuffer[i].distance;
 		spriteUv += 0.5;
 		spriteUv.y += spritesBuffer[i].spriteHeight;
-		spriteUv.x -= ((spritesBuffer[i].position * spritesBuffer[i].distance) / (float)textureSize) * (textureSize / spriteTexSize);
+		spriteUv.x -= spritesBuffer[i].position * spritesBuffer[i].distance / (float)textureSize * (textureSize / spriteTexSize);
 
 		if (spriteUv.x >= 0 && spriteUv.x <= 1 && spriteUv.y >= 0 && spriteUv.y <= 1){
-			float4 sprite = SpriteTexture[(spriteUv * spriteTexSize) / spritesBuffer[i].spriteSize];
+			float3 texCoord = float3(spriteUv * spriteTexSize / spritesBuffer[i].spriteSize, spritesBuffer[i].id);
+			float4 sprite = spritesAtlas[texCoord];
 
 			float shade = 1 - floor(spritesBuffer[i].distance * 5) / 16;
 			sprite *= shade;
 
 			if(sprite.a > 0){
-				SpritesTexture[id.xy] = sprite;
+				SpritesOutTexture[id.xy] = sprite;
 			}
 		}
 	}

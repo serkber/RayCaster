@@ -32,27 +32,18 @@ public class Camera : MonoBehaviour
     private Color ceillingColor = Color.white;
 
     [SerializeField]
-    private bool debug = false;
-
-    [SerializeField]
-    private Texture2D spriteTexture;
-    [SerializeField]
-    private SpriteRenderer sprite;
-    [SerializeField]
-    private float spriteSize;
-    [SerializeField]
-    private float spriteHeight;
+    private bool debug;
 
     [SerializeField]
     private ComputeShader shader;
 
-    private RenderTexture environmentTexture;
-    private RenderTexture depthTexture;
-    private RenderTexture spritesTexture;
+    private RenderTexture environmentOutTexture;
+    private RenderTexture depthOutTexture;
+    private RenderTexture spritesOutTexture;
 
-    public RenderTexture EnvironmentTexture => environmentTexture;
-    public RenderTexture DepthTexture => depthTexture;
-    public RenderTexture SpritesTexture => spritesTexture;
+    public RenderTexture EnvironmentOutTexture => environmentOutTexture;
+    public RenderTexture DepthOutTexture => depthOutTexture;
+    public RenderTexture SpritesOutTexture => spritesOutTexture;
 
     private int environmentHandle;
     private int spritesHandle;
@@ -71,21 +62,23 @@ public class Camera : MonoBehaviour
     private int SpriteSize => sizeof(int) * 3 + sizeof(float) * 3;
 
     private int[] hitScans;
-    ComputeBuffer hitScansBuffer;
+    private ComputeBuffer hitScansBuffer;
     private float[] hitDistances;
-    ComputeBuffer hitDistancesbuffer;
+    private ComputeBuffer hitDistancesbuffer;
     private Vector2[] hitPositions;
-    ComputeBuffer hitPositionsBuffer;
+    private ComputeBuffer hitPositionsBuffer;
     private Vector2[] hitNormals;
-    ComputeBuffer hitNormalsBuffer;
+    private ComputeBuffer hitNormalsBuffer;
 
     private List<Sprite> spritesList;
-    ComputeBuffer spritesBuffer;
+    private ComputeBuffer spritesBuffer;
 
     private uint groupSizeX;
     private uint groupSizeY;
     private int countX;
     private int countY;
+
+    private SpritesManager spritesManager;
 
     private void OnEnable()
     {
@@ -95,27 +88,28 @@ public class Camera : MonoBehaviour
     [ContextMenu("Init")]
     private void Init()
     {
-        FindObjectOfType<SpritesManager>().updateSprites += UpdateSprites;
+        spritesManager = FindObjectOfType<SpritesManager>();
+        spritesManager.updateSprites += UpdateSprites;
 
-        environmentTexture = new RenderTexture(verticalLines, horizontalLines, 0) {
+        environmentOutTexture = new RenderTexture(verticalLines, horizontalLines, 0) {
             filterMode = FilterMode.Point,
             enableRandomWrite = true
         };
-        environmentTexture.Create();
+        environmentOutTexture.Create();
 
-        depthTexture = new RenderTexture(verticalLines, 1, 0, RenderTextureFormat.RFloat)
+        depthOutTexture = new RenderTexture(verticalLines, 1, 0, RenderTextureFormat.RFloat)
         {
             filterMode = FilterMode.Point,
             enableRandomWrite = true
         };
-        depthTexture.Create();
+        depthOutTexture.Create();
 
-        spritesTexture = new RenderTexture(verticalLines, horizontalLines, 0)
+        spritesOutTexture = new RenderTexture(verticalLines, horizontalLines, 0)
         {
             filterMode = FilterMode.Point,
             enableRandomWrite = true
         };
-        spritesTexture.Create();
+        spritesOutTexture.Create();
 
         shader.GetKernelThreadGroupSizes(environmentHandle, out groupSizeX, out groupSizeY, out _);
         countX = verticalLines / (int)groupSizeX;
@@ -140,16 +134,13 @@ public class Camera : MonoBehaviour
             shader.SetTexture(environmentHandle, "WallsTexture", wallsTexture);
         }
 
-        shader.SetTexture(environmentHandle, "EnvironmentTexture", environmentTexture);
-        shader.SetTexture(environmentHandle, "EnvironmentDepth", depthTexture);
+        shader.SetTexture(environmentHandle, "EnvironmentOutTexture", environmentOutTexture);
+        shader.SetTexture(environmentHandle, "DepthOutTexture", depthOutTexture);
 
-        if (spriteTexture)
-        {
-            shader.SetTexture(spritesHandle, "SpriteTexture", spriteTexture);
-        }
-
-        shader.SetTexture(spritesHandle, "SpritesTexture", spritesTexture);
-        shader.SetTexture(spritesHandle, "EnvironmentDepth", depthTexture);
+        shader.SetTexture(spritesHandle, "SpritesOutTexture", spritesOutTexture);
+        shader.SetTexture(spritesHandle, "DepthOutTexture", depthOutTexture);
+        
+        shader.SetTexture(spritesHandle, "spritesAtlas", spritesManager.SpritesAtlas);
 
         initialAngle = -fieldOfView / 2f;
 
@@ -166,7 +157,7 @@ public class Camera : MonoBehaviour
         shader.Dispatch(environmentHandle, countX, countY, 1);
 
         shader.SetBuffer(spritesHandle, "spritesBuffer", spritesBuffer);
-        RenderTexture.active = spritesTexture;
+        RenderTexture.active = spritesOutTexture;
         GL.Clear(true, true, Color.clear);
 
         shader.Dispatch(spritesHandle, countX, countY, 1);
@@ -259,8 +250,8 @@ public class Camera : MonoBehaviour
     private void OnGUI()
     {
         Rect screenRect = new Rect(0, 0, Screen.width, Screen.height);
-        GUI.DrawTexture(screenRect, environmentTexture);
-        GUI.DrawTexture(screenRect, spritesTexture);
+        GUI.DrawTexture(screenRect, environmentOutTexture);
+        GUI.DrawTexture(screenRect, spritesOutTexture);
         //GUI.DrawTexture(screenRect, depthTexture);
     }
 

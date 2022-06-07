@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class SpriteRenderer : MonoBehaviour
 {
+    public Texture2D spriteTexture;
     public float SpriteSize = 1f;
     public float SpriteHeight = 0f;
     public Vector2 Position => transform.position;
