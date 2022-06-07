@@ -253,6 +253,7 @@ public class Camera : MonoBehaviour
 
         spritesBuffer = new ComputeBuffer(spritesRenderers.Length, SpriteSize);
         spritesBuffer.SetData(spritesList);
+        shader.SetInt("spritesCount", spritesList.Count);
     }
 
     private void OnGUI()
