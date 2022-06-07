@@ -1,10 +1,13 @@
 #pragma kernel DrawEnvironment
 #pragma kernel DrawSprites
 
-StructuredBuffer<int> hitScansBuffer;
-StructuredBuffer<float> hitDistancesBuffer;
-StructuredBuffer<float2> hitPositionsBuffer;
-StructuredBuffer<float2> hitNormalsBuffer;
+struct Hit
+{
+	float distance;
+	float3 position;
+	float3 normal;
+};
+StructuredBuffer<Hit> hitsBuffer;
 
 int heightOffset;
 float wallsHeight;
@@ -33,13 +36,13 @@ void DrawEnvironment (uint3 id : SV_DispatchThreadID)
 	float3 ceiling = saturate(screenHeight * 0.5) * ceillingColor;
 	float3 ceilGround = ceiling + ground;
 
-	float wallHeight = (((float)id.y - (textureHeight/2) - heightOffset) * hitDistancesBuffer[id.x]) / textureHeight;
+	float wallHeight = (((float)id.y - (textureHeight/2) - heightOffset) * hitsBuffer[id.x].distance) / textureHeight;
 
 	wallHeight = (wallHeight / wallsHeight + 0.5);
 
 	float texCoordY = frac(wallHeight);
 	
-	float texCoordX = abs(dot(hitNormalsBuffer[id.x], float2(1, 0))) < 0.66 ? hitPositionsBuffer[id.x].x : hitPositionsBuffer[id.x].y;
+	float texCoordX = abs(dot(hitsBuffer[id.x].normal, float2(1, 0))) < 0.66 ? hitsBuffer[id.x].position.x : hitsBuffer[id.x].position.y;
 	texCoordX = frac(texCoordX * 5);
 
 	float2 texCoord = float2(texCoordX, texCoordY);
@@ -53,9 +56,9 @@ void DrawEnvironment (uint3 id : SV_DispatchThreadID)
 
 	float bars = wallHeight <= 1 && wallHeight >= 0 ? 1 : 0;
 
-	float shade = 1 - floor(hitDistancesBuffer[id.x] * 5) / 16;
+	float shade = 1 - floor(hitsBuffer[id.x].distance * 5) / 16;
 
-	float value = bars * shade * hitScansBuffer[id.x];
+	float value = bars * shade;
 
 	value = saturate(value);
 	
@@ -66,7 +69,7 @@ void DrawEnvironment (uint3 id : SV_DispatchThreadID)
 	float4 color = float4(walls + ceilGround, 1);
 
 	EnvironmentOutTexture[id.xy] = color;
-	DepthOutTexture[int2(id.x, 0)] = hitDistancesBuffer[id.x];
+	DepthOutTexture[int2(id.x, 0)] = hitsBuffer[id.x].distance;
 }
 
 struct Sprite
@@ -82,7 +85,6 @@ StructuredBuffer<Sprite> spritesBuffer;
 int spritesCount;
 
 RWTexture2D<float4> SpritesOutTexture;
-Texture2D<float4> SpriteTexture;
 Texture3D<float4> spritesAtlas;
 
 [numthreads(8,8,1)]
@@ -106,9 +108,7 @@ void DrawSprites (uint3 id : SV_DispatchThreadID)
 
 		float2 spriteUv = uv;
 		
-		float2 spriteTexSize;
-		SpriteTexture.GetDimensions(spriteTexSize.x, spriteTexSize.y);
-		spriteTexSize *= spritesBuffer[i].spriteSize;
+		float2 spriteTexSize = float2(64, 64) * spritesBuffer[i].spriteSize;
 		
 		spriteUv *= textureSize / spriteTexSize;
 		spriteUv *= spritesBuffer[i].distance;

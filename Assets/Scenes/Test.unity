@@ -286,6 +286,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff844bba90762b64b98fbab4a84ade27, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  SpriteRenderers:
+  - {fileID: 1426832206}
+  - {fileID: 465274096}
+  - {fileID: 860558334}
+  - {fileID: 969018850}
+  - {fileID: 320378220}
+  - {fileID: 695473516}
+  - {fileID: 1503197390}
+  - {fileID: 1766922165}
 --- !u!1 &220616792
 GameObject:
   m_ObjectHideFlags: 0
@@ -1169,7 +1178,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 860558332}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.698, y: 0.095, z: 0}
+  m_LocalPosition: {x: 0.747, y: 0.118, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1871,7 +1880,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1503197388}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.995, y: 0.623, z: 0}
+  m_LocalPosition: {x: 0.828, y: 0.486, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2000,14 +2009,16 @@ MonoBehaviour:
   verticalLines: 144
   horizontalLines: 128
   fieldOfView: 80
-  wallsHeight: 0.22
   wallsTexture: {fileID: 2800000, guid: 9902bd4a9fcfa904ca4966f665db2f3c, type: 3}
-  heightOffset: 0
+  wallsHeight: 0.22
+  cameraHeight: 0
   light: {r: 1, g: 0.90923923, b: 0.8254717, a: 0.3882353}
   groundColor: {r: 0.312, g: 0.24915628, b: 0.183456, a: 1}
   ceillingColor: {r: 0.34594163, g: 0.3573823, b: 0.4339623, a: 1}
   debug: 1
   shader: {fileID: 7200000, guid: 30e334e17b34d0742a86612ee1e90402, type: 3}
+  spritesManager: {fileID: 165357930}
+  initialAngle: -40
 --- !u!4 &1909723411
 Transform:
   m_ObjectHideFlags: 0
@@ -2015,14 +2026,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1909723408}
-  m_LocalRotation: {x: -0, y: -0, z: -0.26196408, w: -0.96507764}
-  m_LocalPosition: {x: 1.218, y: -0.025, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: 0.90119797, w: 0.43340775}
+  m_LocalPosition: {x: 1.165, y: 0.639, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -329.627}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -591.368}
 --- !u!58 &1909723412
 CircleCollider2D:
   m_ObjectHideFlags: 0

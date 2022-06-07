@@ -6,20 +6,19 @@ using UnityEngine;
 [ExecuteAlways]
 public class SpritesManager : MonoBehaviour
 {
-    public Action<SpriteRenderer[]> updateSprites;
-
-    private SpriteRenderer[] sprites;
+    [HideInInspector]
+    public SpriteRenderer[] SpriteRenderers;
 
     public Texture3D SpritesAtlas {
         get {
             List<Texture2D> spritesTextures = new List<Texture2D>();
-            for (int i = 0; i < sprites.Length; i++) {
-                if (spritesTextures.Contains(sprites[i].spriteTexture)) {
-                    sprites[i].id = spritesTextures.IndexOf(sprites[i].spriteTexture);
+            for (int i = 0; i < SpriteRenderers.Length; i++) {
+                if (spritesTextures.Contains(SpriteRenderers[i].spriteTexture)) {
+                    SpriteRenderers[i].id = spritesTextures.IndexOf(SpriteRenderers[i].spriteTexture);
                     continue;
                 }
-                sprites[i].id = i;
-                spritesTextures.Add(sprites[i].spriteTexture);
+                SpriteRenderers[i].id = i;
+                spritesTextures.Add(SpriteRenderers[i].spriteTexture);
             }
             Texture3D spritesAtlas = new Texture3D(64, 64, spritesTextures.Count, TextureFormat.RGBA32, false);
 
@@ -32,19 +31,17 @@ public class SpritesManager : MonoBehaviour
 
     private void OnEnable()
     {
-        sprites = FindObjectsOfType<SpriteRenderer>();
+        SpriteRenderers = FindObjectsOfType<SpriteRenderer>();
     }
 
     private void Update()
     {
-        if (sprites != null)
+        if (SpriteRenderers != null)
         {
 
 #if UNITY_EDITOR
-            sprites = FindObjectsOfType<SpriteRenderer>();
+            SpriteRenderers = FindObjectsOfType<SpriteRenderer>();
 #endif
-
-            updateSprites?.Invoke(sprites);
         }
     }
 }
