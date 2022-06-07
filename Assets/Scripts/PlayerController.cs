@@ -16,12 +16,9 @@ public class PlayerController : MonoBehaviour
     
     private Rigidbody2D rb;
 
-    private Vector2 lastMousePos;
-
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        lastMousePos = Input.mousePosition;
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Confined;
     }
@@ -70,11 +67,8 @@ public class PlayerController : MonoBehaviour
 
     private void Look()
     {
-        Vector2 mouseDelta = (Vector2)Input.mousePosition - lastMousePos;
-        mouseDelta *= Time.deltaTime * mouseSensitivity;
+        float mouseDelta = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         
-        transform.Rotate(-transform.forward, mouseDelta.x);
-
-        lastMousePos = Input.mousePosition;
+        transform.Rotate(-transform.forward, mouseDelta, Space.World);
     }
 }

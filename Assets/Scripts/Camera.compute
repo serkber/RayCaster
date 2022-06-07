@@ -1,38 +1,132 @@
-#pragma kernel CSMain
+#pragma kernel DrawEnvironment
+#pragma kernel DrawSprites
 
 StructuredBuffer<int> hitScansBuffer;
 StructuredBuffer<float> hitDistancesBuffer;
+StructuredBuffer<float2> hitPositionsBuffer;
+StructuredBuffer<float2> hitNormalsBuffer;
 
-int textureHeight;
+int heightOffset;
 float wallsHeight;
+float4 light;
+float3 groundColor;
+float3 ceillingColor;
 
-RWTexture2D<float4> Result;
+RWTexture2D<float4> EnvironmentTexture;
+Texture2D<float4> WallsTexture;
+RWTexture2D<float> EnvironmentDepth;
 
 [numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void DrawEnvironment (uint3 id : SV_DispatchThreadID)
 {
+	int textureWidth;
+	int textureHeight;
+	EnvironmentTexture.GetDimensions(textureWidth, textureHeight);
+	
 	float2 uv = float2(id.xy);
-	uv -= float2(0, textureHeight / 2);
+	uv -= float2(0, textureHeight / 2 + heightOffset);
 
-	float height = uv.y / textureHeight * 2;
+	float screenHeight = uv.y / textureHeight * 2;
+	int screenHeightInt = screenHeight * 16;
+	screenHeight = screenHeightInt / float(16);
+	float3 ground = saturate(-screenHeight) * groundColor;
+	float3 ceiling = saturate(screenHeight * 0.5) * ceillingColor;
+	float3 ceilGround = ceiling + ground;
 
-	float ground = saturate(-height);
-	float ceiling = saturate(height * 0.5);
-	float ceilGround = ceiling + ground;
-	int ceilGroundInt = ceilGround * 16;
-	ceilGround = ceilGroundInt / (float)16;
+	float wallHeight = (((float)id.y - (textureHeight/2) - heightOffset) * hitDistancesBuffer[id.x]) / textureHeight;
 
-	float bars = abs(uv.y) / wallsHeight < 1 / hitDistancesBuffer[id.x] ? 1 : 0;
+	wallHeight = (wallHeight / wallsHeight + 0.5);
+
+	float texCoordY = frac(wallHeight);
+	
+	float texCoordX = abs(dot(hitNormalsBuffer[id.x], float2(1, 0))) < 0.66 ? hitPositionsBuffer[id.x].x : hitPositionsBuffer[id.x].y;
+	texCoordX = frac(texCoordX * 5);
+
+	float2 texCoord = float2(texCoordX, texCoordY);
+
+	int wallsTexWidth;
+	int wallsTexHeight;
+	WallsTexture.GetDimensions(wallsTexWidth, wallsTexHeight);
+	int2 wallsTextureSize = int2(wallsTexWidth, wallsTexHeight);
+	float3 lighting = saturate((1 - texCoordY) + light.a) * light.rgb;
+	float3 wallsTexture = WallsTexture[texCoord * wallsTextureSize].rgb * lighting;
+
+	float bars = wallHeight <= 1 && wallHeight >= 0 ? 1 : 0;
 
 	float shade = 1 - floor(hitDistancesBuffer[id.x] * 5) / 16;
 
 	float value = bars * shade * hitScansBuffer[id.x];
 
-	value = max(value, ceilGround);
-
 	value = saturate(value);
+	
+	float3 walls = wallsTexture * value;
 
-	float4 color = float4(value.xxx, 1);
+	ceilGround *= 1 - value;
 
-	Result[id.xy] = color;
+	float4 color = float4(walls + ceilGround, 1);
+
+	EnvironmentTexture[id.xy] = color;
+	EnvironmentDepth[int2(id.x, 0)] = hitDistancesBuffer[id.x];
+}
+
+struct Sprite
+{
+    int position;
+    int id;
+    int frame;
+	float distance;
+    float spriteSize;
+    float spriteHeight;
+};
+StructuredBuffer<Sprite> spritesBuffer;
+
+RWTexture2D<float4> SpritesTexture;
+Texture2D<float4> SpriteTexture;
+
+[numthreads(8,8,1)]
+void DrawSprites (uint3 id : SV_DispatchThreadID)
+{
+	int textureWidth;
+	int textureHeight;
+	SpritesTexture.GetDimensions(textureWidth, textureHeight);
+	int2 textureSize = int2(textureWidth, textureHeight);
+	float aspect = textureWidth / (float)textureHeight;
+	
+	float2 uv = (float2)id.xy;
+	uv.y -= heightOffset;
+	uv /= (float)textureSize;
+	uv.y -= 0.5 / aspect;
+
+	int spritesCount;
+	int spriteStride;
+	spritesBuffer.GetDimensions((uint)spritesCount, (uint)spriteStride);
+
+	for(int i = 0; i < spritesCount; i++){
+		if (spritesBuffer[i].distance > EnvironmentDepth[int2(id.x, 0)]){
+			continue;
+		}
+
+		float2 spriteUv = uv;
+		
+		float2 spriteTexSize;
+		SpriteTexture.GetDimensions(spriteTexSize.x, spriteTexSize.y);
+		spriteTexSize *= spritesBuffer[i].spriteSize;
+		
+		spriteUv *= textureSize / spriteTexSize;
+		spriteUv *= spritesBuffer[i].distance;
+		spriteUv += 0.5;
+		spriteUv.y += spritesBuffer[i].spriteHeight;
+		spriteUv.x -= ((spritesBuffer[i].position * spritesBuffer[i].distance) / (float)textureSize) * (textureSize / spriteTexSize);
+
+		if (spriteUv.x >= 0 && spriteUv.x <= 1 && spriteUv.y >= 0 && spriteUv.y <= 1){
+			float4 sprite = SpriteTexture[(spriteUv * spriteTexSize) / spritesBuffer[i].spriteSize];
+
+			float shade = 1 - floor(spritesBuffer[i].distance * 5) / 16;
+			sprite *= shade;
+
+			if(sprite.a > 0){
+				SpritesTexture[id.xy] = sprite;
+			}
+		}
+	}
 }

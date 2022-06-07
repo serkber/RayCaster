@@ -20,15 +20,16 @@ public class CameraEditor : Editor
 
     private void OnSceneGUI()
     {
-        if (!camera.OutputTexture)
+        if (!camera.EnvironmentTexture)
         {
             return;
         }
-        float width = camera.OutputTexture.width * previewSize / camera.OutputTexture.height;
+        float width = camera.EnvironmentTexture.width * previewSize / camera.EnvironmentTexture.height;
 
         Handles.BeginGUI();
 
-            GUI.DrawTexture(new Rect(10, 10, width, previewSize), camera.OutputTexture);
+            GUI.DrawTexture(new Rect(10, 10, width, previewSize), camera.EnvironmentTexture);
+            GUI.DrawTexture(new Rect(10, 10, width, previewSize), camera.SpritesTexture);
 
         Handles.EndGUI();
     }
