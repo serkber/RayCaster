@@ -1,0 +1,22 @@
+#pragma kernel CSMain
+
+Texture2D<float4> EnvironmentTexture;
+
+StructuredBuffer<float4x4> TransformationMatrices;
+
+RWStructuredBuffer<int> CollisionData;
+
+RWTexture2D<float4> Result;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	float3 coord = float3(id.xy, 1);
+	coord = mul(TransformationMatrices[id.z], coord);
+
+	if (EnvironmentTexture[coord.xy].a > 0.5){
+		CollisionData[id.z] = id.y;
+	}
+
+	Result[id.xy] = EnvironmentTexture[coord.xy];
+}
